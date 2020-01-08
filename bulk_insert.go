@@ -16,17 +16,17 @@ import (
 //                  Embedding a large number of variables at once will raise an error beyond the limit of prepared statement.
 //                  Larger size will normally lead the better performance, but 2000 to 3000 is reasonable.
 // [excludeColumns] Columns you want to exclude from insert. You can omit if there is no column you want to exclude.
-func BulkInsert(db *gorm.DB, objects []interface{}, chunkSize int, excludeColumns ...string) error {
+func BulkInsert(db *gorm.DB, objects []interface{}, chunkSize int, ignoreDuplicate bool, excludeColumns ...string) error {
 	// Split records with specified size not to exceed Database parameter limit
 	for _, objSet := range splitObjects(objects, chunkSize) {
-		if err := insertObjSet(db, objSet, excludeColumns...); err != nil {
+		if err := insertObjSet(db, objSet, ignoreDuplicate, excludeColumns...); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func insertObjSet(db *gorm.DB, objects []interface{}, excludeColumns ...string) error {
+func insertObjSet(db *gorm.DB, objects []interface{}, ignoreDuplicate bool, excludeColumns ...string) error {
 	if len(objects) == 0 {
 		return nil
 	}
@@ -76,7 +76,13 @@ func insertObjSet(db *gorm.DB, objects []interface{}, excludeColumns ...string) 
 		mainScope.SQLVars = append(mainScope.SQLVars, scope.SQLVars...)
 	}
 
-	mainScope.Raw(fmt.Sprintf("INSERT INTO %s (%s) VALUES %s",
+	var sql string
+	if ignoreDuplicate {
+		sql = "INSERT IGNORE INTO %s (%s) VALUES %s"
+	} else {
+		sql = "INSERT INTO %s (%s) VALUES %s"
+	}
+	mainScope.Raw(fmt.Sprintf(sql,
 		mainScope.QuotedTableName(),
 		strings.Join(dbColumns, ", "),
 		strings.Join(placeholders, ", "),
