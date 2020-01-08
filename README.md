@@ -1,4 +1,4 @@
-# Gorm Bulk Insert
+# Gorm Bulk Insert(forked from t-tiger)
 
 `Gorm Bulk Insert` is a library to implement bulk insert using [gorm](https://github.com/jinzhu/gorm). Execute bulk insert just by passing a slice of struct, as if you were using a gorm regularly.
 
